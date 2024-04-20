@@ -2,6 +2,7 @@ using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using NOS.Engineering.Challenge.API.Models;
 using NOS.Engineering.Challenge.Managers;
+using NOS.Engineering.Challenge.Models;
 
 namespace NOS.Engineering.Challenge.API.Controllers;
 
@@ -15,10 +16,11 @@ public class ContentController : Controller
         _manager = manager;
     }
     
+    [Obsolete]
     [HttpGet]
-    public async Task<IActionResult> GetManyContents()
+    public async Task<IActionResult> GetManyContentsAsync()
     {
-        var contents = await _manager.GetManyContents().ConfigureAwait(false);
+        var contents = await _manager.GetManyContentsAsync().ConfigureAwait(false);
 
         if (!contents.Any())
             return NotFound();
@@ -26,10 +28,24 @@ public class ContentController : Controller
         return Ok(contents);
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetContent(Guid id)
+    [HttpGet("filtered")]
+    public async Task<IActionResult> GetFilteredContentsAsync(string? title, string? genre)
     {
-        var content = await _manager.GetContent(id).ConfigureAwait(false);
+        var filterDto = new FilterDto(title, genre);
+
+        var contents = await _manager.GetFilteredContentsAsync(filterDto).ConfigureAwait(false);
+
+        if (!contents.Any())
+            return NotFound();
+
+        return Ok(contents);
+    }
+
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetContentAsync(Guid id)
+    {
+        var content = await _manager.GetContentAsync(id).ConfigureAwait(false);
 
         if (content == null)
             return NotFound();
@@ -38,50 +54,54 @@ public class ContentController : Controller
     }
     
     [HttpPost]
-    public async Task<IActionResult> CreateContent(
+    public async Task<IActionResult> CreateContentAsync(
         [FromBody] ContentInput content
         )
     {
-        var createdContent = await _manager.CreateContent(content.ToDto()).ConfigureAwait(false);
+        var createdContent = await _manager.CreateContentAsync(content.ToDto()).ConfigureAwait(false);
 
         return createdContent == null ? Problem() : Ok(createdContent);
     }
     
     [HttpPatch("{id}")]
-    public async Task<IActionResult> UpdateContent(
+    public async Task<IActionResult> UpdateContentAsync(
         Guid id,
         [FromBody] ContentInput content
         )
     {
-        var updatedContent = await _manager.UpdateContent(id, content.ToDto()).ConfigureAwait(false);
+        var updatedContent = await _manager.UpdateContentAsync(id, content.ToDto()).ConfigureAwait(false);
 
         return updatedContent == null ? NotFound() : Ok(updatedContent);
     }
     
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteContent(
+    public async Task<IActionResult> DeleteContentAsync(
         Guid id
     )
     {
-        var deletedId = await _manager.DeleteContent(id).ConfigureAwait(false);
+        var deletedId = await _manager.DeleteContentAsync(id).ConfigureAwait(false);
         return Ok(deletedId);
     }
     
     [HttpPost("{id}/genre")]
-    public Task<IActionResult> AddGenres(
+    public async Task<IActionResult> AddGenresAsync(
         Guid id,
-        [FromBody] IEnumerable<string> genre
+        [FromBody] IEnumerable<string> genreList
     )
     {
-        return Task.FromResult<IActionResult>(StatusCode((int)HttpStatusCode.NotImplemented));
+        var updatedContent = await _manager.AddGenresAsync(id, genreList).ConfigureAwait(false);
+
+        return updatedContent == null ? NotFound() : Ok(updatedContent);
     }
     
     [HttpDelete("{id}/genre")]
-    public Task<IActionResult> RemoveGenres(
+    public async Task<IActionResult> RemoveGenresAsync(
         Guid id,
-        [FromBody] IEnumerable<string> genre
+        [FromBody] IEnumerable<string> genreList
     )
     {
-        return Task.FromResult<IActionResult>(StatusCode((int)HttpStatusCode.NotImplemented));
+        var updatedContent = await _manager.RemoveGenresAsync(id, genreList).ConfigureAwait(false);
+
+        return updatedContent == null ? NotFound() : Ok(updatedContent);
     }
 }

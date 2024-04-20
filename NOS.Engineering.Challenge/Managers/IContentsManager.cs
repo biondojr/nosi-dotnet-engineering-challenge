@@ -4,9 +4,12 @@ namespace NOS.Engineering.Challenge.Managers;
 
 public interface IContentsManager
 {
-    Task<IEnumerable<Content?>> GetManyContents();
-    Task<Content?> CreateContent(ContentDto content);
-    Task<Content?> GetContent(Guid id);
-    Task<Content?> UpdateContent(Guid id, ContentDto content);
-    Task<Guid> DeleteContent(Guid id);
+    Task<IEnumerable<Content?>> GetManyContentsAsync();
+    Task<IEnumerable<Content?>> GetFilteredContentsAsync(FilterDto filterDto);
+    Task<Content?> CreateContentAsync(ContentDto contentDto);
+    Task<Content?> GetContentAsync(Guid id);
+    Task<Content?> UpdateContentAsync(Guid id, ContentDto content);
+    Task<Guid> DeleteContentAsync(Guid id);
+    Task<Content?> AddGenresAsync(Guid id, IEnumerable<string> genreList);
+    Task<Content?> RemoveGenresAsync(Guid id, IEnumerable<string> genreList);
 }

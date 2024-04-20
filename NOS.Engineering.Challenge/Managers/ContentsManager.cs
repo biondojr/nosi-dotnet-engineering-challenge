@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using NOS.Engineering.Challenge.Database;
 using NOS.Engineering.Challenge.Models;
 
@@ -6,34 +7,86 @@ namespace NOS.Engineering.Challenge.Managers;
 public class ContentsManager : IContentsManager
 {
     private readonly IDatabase<Content?, ContentDto> _database;
+    private readonly ILogger<ContentsManager> _logger;
 
-    public ContentsManager(IDatabase<Content?, ContentDto> database)
+    public ContentsManager(IDatabase<Content?, ContentDto> database, ILogger<ContentsManager> logger)
     {
         _database = database;
+        _logger = logger;
     }
 
-    public Task<IEnumerable<Content?>> GetManyContents()
+    public async Task<IEnumerable<Content?>> GetManyContentsAsync()
     {
-        return _database.ReadAll();
+        return await _database.ReadAll().ConfigureAwait(false);
     }
 
-    public Task<Content?> CreateContent(ContentDto content)
+    public async Task<IEnumerable<Content?>> GetFilteredContentsAsync(FilterDto filterDto)
     {
-        return _database.Create(content);
+        var contents = await _database.ReadAll().ConfigureAwait(false);
+
+        var filteredContents = contents.Where(content => content.Title.Contains(filterDto.Title, StringComparison.OrdinalIgnoreCase)
+            && content.GenreList.Any(genre => genre.Contains(filterDto.Genre, StringComparison.OrdinalIgnoreCase)));
+
+        return filteredContents;
     }
 
-    public Task<Content?> GetContent(Guid id)
+    public async Task<Content?> CreateContentAsync(ContentDto contentDto)
     {
-        return _database.Read(id);
+        _logger.LogInformation("Creating new content");
+
+        return await _database.Create(contentDto).ConfigureAwait(false);
     }
 
-    public Task<Content?> UpdateContent(Guid id, ContentDto content)
+    public async Task<Content?> GetContentAsync(Guid id)
     {
-        return _database.Update(id, content);
+        return await _database.Read(id).ConfigureAwait(false);
     }
 
-    public Task<Guid> DeleteContent(Guid id)
+    public async Task<Content?> UpdateContentAsync(Guid id, ContentDto content)
     {
-        return _database.Delete(id);
+        _logger.LogInformation("Updating content id: {Id}", id);
+
+        return await _database.Update(id, content).ConfigureAwait(false);
+    }
+
+    public async Task<Guid> DeleteContentAsync(Guid id)
+    {
+        _logger.LogInformation("Deleting content id: {Id}", id);
+
+        return await _database.Delete(id).ConfigureAwait(false);
+    }
+
+    public async Task<Content?> AddGenresAsync(Guid id, IEnumerable<string> genreList)
+    {
+        var content = await _database.Read(id).ConfigureAwait(false);
+
+        if (content == null) return null;
+
+        var newGenreList = genreList
+            .Concat(content.GenreList)
+            .Distinct();
+
+        var contentDto = content.ToDto();
+        contentDto.GenreList = newGenreList;
+
+        _logger.LogInformation("Adding genres to content id: {Id}", id);
+
+        return await _database.Update(id, contentDto).ConfigureAwait(false);
+    }
+
+    public async Task<Content?> RemoveGenresAsync(Guid id, IEnumerable<string> genreList)
+    {
+        var content = await _database.Read(id).ConfigureAwait(false);
+
+        if (content == null) return null;
+        
+        var newGenreList = content.GenreList.Except(genreList);
+
+        var contentDto = content.ToDto();
+        contentDto.GenreList = newGenreList;
+
+        _logger.LogInformation("Removing genres from content id: {Id}", id);
+
+        return await _database.Update(id, contentDto).ConfigureAwait(false);
     }
 }
