@@ -12,6 +12,9 @@ public class Content
     public DateTime EndTime { get; }
     public IEnumerable<string> GenreList { get; }
 
+    public Content()
+    {
+    }
 
     public Content(Guid id, string title, string subTitle, string description, string imageUrl, int duration, DateTime startTime, DateTime endTime, IEnumerable<string> genreList)
     {
